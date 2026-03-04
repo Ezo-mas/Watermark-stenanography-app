@@ -76,12 +76,15 @@ public partial class MainWindow : Window
     {
         var bitmap = new BitmapImage();
         bitmap.BeginInit();
-        bitmap.CacheOption = BitmapCacheOption.OnLoad; // This is the magic line that releases the file lock
+        bitmap.CacheOption = BitmapCacheOption.OnLoad;
         bitmap.UriSource = new Uri(path);
         bitmap.EndInit();
         return bitmap;
     }
 
+    /// <summary>
+    /// Triggers the watermarking process based on selected UI options and displays the preview.
+    /// </summary>
     private void BtnApplyVisible_Click(object sender, RoutedEventArgs e)
     {
         if (string.IsNullOrEmpty(_baseVisiblePath) || string.IsNullOrEmpty(_watermarkVisiblePath))
@@ -213,6 +216,9 @@ public partial class MainWindow : Window
         }
     }
 
+    /// <summary>
+    /// Encodes the user's secret text into the selected image and displays the encoded preview.
+    /// </summary>
     private void BtnHideText_Click(object sender, RoutedEventArgs e)
     {
         if (string.IsNullOrEmpty(_stegaImagePath))
@@ -253,7 +259,8 @@ public partial class MainWindow : Window
             return;
         }
 
-        // Steganography requires precise pixel data. PNG is lossless. JPG will destroy the data.
+        // Steganography requires precise pixel data. 
+        // Saving as PNG is recommended to avoid compression artifacts that can corrupt the hidden message.
         var sfd = new SaveFileDialog { 
             Filter = "PNG Image (Required for Steganography)|*.png",
             DefaultExt = "png"
@@ -273,6 +280,9 @@ public partial class MainWindow : Window
         }
     }
 
+    /// <summary>
+    /// Attempts to extract and display a hidden message from the current image.
+    /// </summary>
     private void BtnExtractText_Click(object sender, RoutedEventArgs e)
     {
         if (string.IsNullOrEmpty(_stegaImagePath) && (_previewStegaBytes == null || _previewStegaBytes.Length == 0))
