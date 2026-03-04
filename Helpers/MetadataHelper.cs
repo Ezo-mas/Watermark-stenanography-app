@@ -50,8 +50,6 @@ public static class MetadataHelper
         }
         return sb.ToString();
     }
-
-
     /// <summary>
     /// Compares the metadata of two images, identifying added, removed, and modified tags.
     /// </summary>
