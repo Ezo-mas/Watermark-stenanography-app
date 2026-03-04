@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -11,6 +11,8 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using Microsoft.Win32;
 using WatermarkApp.Helpers;
+using System.Runtime.InteropServices;
+using System.Windows.Interop;
 
 namespace WatermarkApp;
 
@@ -23,9 +25,26 @@ public partial class MainWindow : Window
     private string _watermarkVisiblePath = string.Empty;
     private byte[] _previewVisibleBytes = Array.Empty<byte>();
 
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
+
+    private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
+
     public MainWindow()
     {
         InitializeComponent();
+        
+        // Try enabling dark title bar on Windows 10 updated / Windows 11
+        try
+        {
+            this.SourceInitialized += (s, e) =>
+            {
+                IntPtr hwnd = new WindowInteropHelper(this).Handle;
+                int useImmersiveDarkMode = 1;
+                DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ref useImmersiveDarkMode, sizeof(int));
+            };
+        }
+        catch { /* Ignore if not supported on older windows */ }
     }
 
     // --- VISIBLE WATERMARK SECTION ---
@@ -67,14 +86,14 @@ public partial class MainWindow : Window
     {
         if (string.IsNullOrEmpty(_baseVisiblePath) || string.IsNullOrEmpty(_watermarkVisiblePath))
         {
-            MessageBox.Show("Please select both a base image and a watermark.");
+            AppMessageBox.Show("Please select both a base image and a watermark.");
             return;
         }
 
         float angle = 0;
         if (!float.TryParse(TxtAngle.Text, out angle))
         {
-            MessageBox.Show("Invalid angle value.");
+            AppMessageBox.Show("Invalid angle value.");
             return;
         }
 
@@ -99,7 +118,7 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Error applying watermark: {ex.Message}");
+            AppMessageBox.Show($"Error applying watermark: {ex.Message}");
         }
     }
 
@@ -107,7 +126,7 @@ public partial class MainWindow : Window
     {
         if (string.IsNullOrEmpty(_baseVisiblePath))
         {
-            MessageBox.Show("No image loaded to clear.");
+            AppMessageBox.Show("No image loaded to clear.");
             return;
         }
 
@@ -120,7 +139,7 @@ public partial class MainWindow : Window
     {
         if (_previewVisibleBytes == null || _previewVisibleBytes.Length == 0)
         {
-            MessageBox.Show("Apply a watermark first before saving.");
+            AppMessageBox.Show("Apply a watermark first before saving.");
             return;
         }
 
@@ -134,11 +153,11 @@ public partial class MainWindow : Window
             try 
             {
                 File.WriteAllBytes(sfd.FileName, _previewVisibleBytes);
-                MessageBox.Show("Image saved successfully!");
+                AppMessageBox.Show("Image saved successfully!");
             }
             catch (IOException ex)
             {
-                MessageBox.Show($"File save error (is it open in another program?): {ex.Message}");
+                AppMessageBox.Show($"File save error (is it open in another program?): {ex.Message}");
             }
         }
     }
@@ -147,32 +166,32 @@ public partial class MainWindow : Window
     {
         if (string.IsNullOrEmpty(_baseVisiblePath))
         {
-            MessageBox.Show("Please select a base image first.");
+            AppMessageBox.Show("Please select a base image first.");
             return;
         }
 
         string metadata = MetadataHelper.GetMetadata(_baseVisiblePath);
-        MessageBox.Show(metadata, "Image Metadata", MessageBoxButton.OK, MessageBoxImage.Information);
+        AppMessageBox.Show(metadata, "Image Metadata", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private void BtnCompareMetaVisible_Click(object sender, RoutedEventArgs e)
     {
         if (string.IsNullOrEmpty(_baseVisiblePath))
         {
-            MessageBox.Show("Please load an image first.");
+            AppMessageBox.Show("Please load an image first.");
             return;
         }
 
         if (_previewVisibleBytes == null || _previewVisibleBytes.Length == 0)
         {
-            MessageBox.Show("Please apply a watermark first to generate the new metadata.");
+            AppMessageBox.Show("Please apply a watermark first to generate the new metadata.");
             return;
         }
 
         string diff = MetadataHelper.CompareMetadata(_baseVisiblePath, _previewVisibleBytes);
         
         // Show differences in a message box, or optionally a simple scrollable window
-        MessageBox.Show(diff, "Metadata Differences", MessageBoxButton.OK, MessageBoxImage.Information);
+        AppMessageBox.Show(diff, "Metadata Differences", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     // --- INVISIBLE TEXT STEGANOGRAPHY SECTION ---
@@ -198,13 +217,13 @@ public partial class MainWindow : Window
     {
         if (string.IsNullOrEmpty(_stegaImagePath))
         {
-            MessageBox.Show("Please select an image first.");
+            AppMessageBox.Show("Please select an image first.");
             return;
         }
         
         if (string.IsNullOrEmpty(TxtSecretMessage.Text))
         {
-            MessageBox.Show("Please enter a message to hide.");
+            AppMessageBox.Show("Please enter a message to hide.");
             return;
         }
 
@@ -218,11 +237,11 @@ public partial class MainWindow : Window
             bitmap.EndInit();
             ImgPreviewStega.Source = bitmap;
             
-            MessageBox.Show("Message hidden successfully. Please save the image as PNG!");
+            AppMessageBox.Show("Message hidden successfully. Please save the image as PNG!");
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Encoding failed: {ex.Message}");
+            AppMessageBox.Show($"Encoding failed: {ex.Message}");
         }
     }
 
@@ -230,7 +249,7 @@ public partial class MainWindow : Window
     {
         if (_previewStegaBytes == null || _previewStegaBytes.Length == 0)
         {
-            MessageBox.Show("Hide a message first before saving.");
+            AppMessageBox.Show("Hide a message first before saving.");
             return;
         }
 
@@ -245,11 +264,11 @@ public partial class MainWindow : Window
             try
             {
                 File.WriteAllBytes(sfd.FileName, _previewStegaBytes);
-                MessageBox.Show("Encoded image saved successfully!");
+                AppMessageBox.Show("Encoded image saved successfully!");
             }
             catch (IOException ex)
             {
-                MessageBox.Show($"File save error (is it open in another program?): {ex.Message}");
+                AppMessageBox.Show($"File save error (is it open in another program?): {ex.Message}");
             }
         }
     }
@@ -258,7 +277,7 @@ public partial class MainWindow : Window
     {
         if (string.IsNullOrEmpty(_stegaImagePath) && (_previewStegaBytes == null || _previewStegaBytes.Length == 0))
         {
-             MessageBox.Show("Please select an image or encode a message first.");
+             AppMessageBox.Show("Please select an image or encode a message first.");
              return;
         }
         
@@ -281,7 +300,7 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-             MessageBox.Show($"Decoding failed. Are you sure this image contains a hidden message? Error: {ex.Message}");
+             AppMessageBox.Show($"Decoding failed. Are you sure this image contains a hidden message? Error: {ex.Message}");
         }
     }
 
@@ -289,7 +308,7 @@ public partial class MainWindow : Window
     {
         if (string.IsNullOrEmpty(_stegaImagePath))
         {
-            MessageBox.Show("Please select an image first.");
+            AppMessageBox.Show("Please select an image first.");
             return;
         }
 
@@ -318,12 +337,12 @@ public partial class MainWindow : Window
                 // Clear the preview memory since we wiped it
                 _previewStegaBytes = Array.Empty<byte>();
                 
-                MessageBox.Show("Cleared image saved successfully!");
+                AppMessageBox.Show("Cleared image saved successfully!");
             }
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Clear failed: {ex.Message}");
+            AppMessageBox.Show($"Clear failed: {ex.Message}");
         }
     }
 
@@ -331,29 +350,29 @@ public partial class MainWindow : Window
     {
         if (string.IsNullOrEmpty(_stegaImagePath))
         {
-            MessageBox.Show("Please select an image first.");
+            AppMessageBox.Show("Please select an image first.");
             return;
         }
 
         string metadata = MetadataHelper.GetMetadata(_stegaImagePath);
-        MessageBox.Show(metadata, "Image Metadata", MessageBoxButton.OK, MessageBoxImage.Information);
+        AppMessageBox.Show(metadata, "Image Metadata", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private void BtnCompareMetaStega_Click(object sender, RoutedEventArgs e)
     {
         if (string.IsNullOrEmpty(_stegaImagePath))
         {
-            MessageBox.Show("Please load an image first.");
+            AppMessageBox.Show("Please load an image first.");
             return;
         }
 
         if (_previewStegaBytes == null || _previewStegaBytes.Length == 0)
         {
-            MessageBox.Show("Please encode a message first to generate the new metadata.");
+            AppMessageBox.Show("Please encode a message first to generate the new metadata.");
             return;
         }
 
         string diff = MetadataHelper.CompareMetadata(_stegaImagePath, _previewStegaBytes);
-        MessageBox.Show(diff, "Metadata Differences", MessageBoxButton.OK, MessageBoxImage.Information);
+        AppMessageBox.Show(diff, "Metadata Differences", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 }
