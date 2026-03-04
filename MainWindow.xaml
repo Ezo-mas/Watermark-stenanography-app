@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WatermarkApp"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="MainWindow" Height="650" Width="900">
     <Grid>
         <TabControl>
             <!-- Visible Image Watermarking Tab -->
@@ -40,9 +40,11 @@
                         <CheckBox Name="ChkRepeat" Content="Tile / Repeat Watermark" Margin="0,5,0,10"/>
 
                         <Button Name="BtnApplyVisible" Content="3. Apply Watermark" Margin="0,15,0,5" Click="BtnApplyVisible_Click"/>
-                        <Button Name="BtnSaveVisible" Content="4. Save Image" Margin="0,5,0,5" Click="BtnSaveVisible_Click"/>
+                        <Button Name="BtnClearVisible" Content="Undo / Remove Watermark" Margin="0,5,0,5" Click="BtnClearVisible_Click"/>
+                        <Button Name="BtnSaveVisible" Content="4. Save Image" Margin="0,15,0,5" Click="BtnSaveVisible_Click"/>
                         
-                        <Button Name="BtnViewMetaVisible" Content="View Image Metadata" Margin="0,15,0,5" Click="BtnViewMetaVisible_Click"/>
+                        <Button Name="BtnViewMetaVisible" Content="View Original Image Metadata" Margin="0,15,0,5" Click="BtnViewMetaVisible_Click"/>
+                        <Button Name="BtnCompareMetaVisible" Content="Compare Metadata (After Watermark)" Margin="0,5,0,5" Click="BtnCompareMetaVisible_Click"/>
                     </StackPanel>
 
                     <Border Grid.Column="1" BorderBrush="Gray" BorderThickness="1">
@@ -77,7 +79,8 @@
                         
                         <Button Name="BtnClearMessage" Content="Clear Hidden Message &amp; Save" Margin="0,5" Click="BtnClearMessage_Click"/>
 
-                        <Button Name="BtnViewMetaStega" Content="View Image Metadata" Margin="0,15,0,5" Click="BtnViewMetaStega_Click"/>
+                        <Button Name="BtnViewMetaStega" Content="View Original Image Metadata" Margin="0,15,0,5" Click="BtnViewMetaStega_Click"/>
+                        <Button Name="BtnCompareMetaStega" Content="Compare Metadata (After Encode)" Margin="0,5,0,5" Click="BtnCompareMetaStega_Click"/>
                     </StackPanel>
 
                     <Border Grid.Column="1" BorderBrush="Gray" BorderThickness="1">

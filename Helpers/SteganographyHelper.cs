@@ -15,9 +15,18 @@ public static class SteganographyHelper
     {
         using var image = Image.Load<Rgba32>(imagePath);
         
-        // Convert text + marker to bit array
         string fullMessage = textToHide + EndOfMessageMarker;
         byte[] messageBytes = Encoding.UTF8.GetBytes(fullMessage);
+        
+        int maximumByteCapacity = (image.Width * image.Height) / 8;
+        
+        if (messageBytes.Length > maximumByteCapacity)
+        {
+            int allowedVisibleBytes = maximumByteCapacity - Encoding.UTF8.GetByteCount(EndOfMessageMarker);
+            int bytesAttempted = messageBytes.Length - Encoding.UTF8.GetByteCount(EndOfMessageMarker);
+
+            throw new Exception($"Message is too large for this image.\n\nImage allows: {allowedVisibleBytes} bytes.\nYou attempted: {textToHide.Length} characters ({bytesAttempted} bytes). Note that special characters and line breaks may use more than 1 byte.");
+        }
         
         int messageIndex = 0;
         int bitIndex = 0;
@@ -59,20 +68,28 @@ public static class SteganographyHelper
     public static string DecodeText(string imagePath)
     {
         using var image = Image.Load<Rgba32>(imagePath);
+        return DecodeImage(image);
+    }
+
+    public static string DecodeTextFromBytes(byte[] imageBytes)
+    {
+        using var image = Image.Load<Rgba32>(imageBytes);
+        return DecodeImage(image);
+    }
+
+    private static string DecodeImage(Image<Rgba32> image)
+    {
         var bytes = new System.Collections.Generic.List<byte>();
         
+        byte[] markerBytes = Encoding.UTF8.GetBytes(EndOfMessageMarker);
         byte currentByte = 0;
         int bitIndex = 0;
-        string currentDecodedText = "";
         
-        // Need to loop manually as ProcessPixelRows can be tricky when we need early exit
         for (int y = 0; y < image.Height; y++)
         {
             for (int x = 0; x < image.Width; x++)
             {
                 var pixel = image[x, y];
-                
-                // Read the Least Significant Bit from Blue channel
                 int bit = pixel.B & 1;
                 
                 currentByte = (byte)((currentByte << 1) | bit);
@@ -82,26 +99,53 @@ public static class SteganographyHelper
                 {
                     bytes.Add(currentByte);
                     
-                    // Decode incrementally for performance and EOF checking
-                    currentDecodedText = Encoding.UTF8.GetString(bytes.ToArray());
-                    if (currentDecodedText.EndsWith(EndOfMessageMarker))
+                    if (bytes.Count >= markerBytes.Length)
                     {
-                        return currentDecodedText.Replace(EndOfMessageMarker, "");
+                        bool isMatch = true;
+                        for (int i = 0; i < markerBytes.Length; i++)
+                        {
+                            if (bytes[bytes.Count - markerBytes.Length + i] != markerBytes[i])
+                            {
+                                isMatch = false;
+                                break;
+                            }
+                        }
+                        
+                        if (isMatch)
+                        {
+                            return Encoding.UTF8.GetString(bytes.ToArray(), 0, bytes.Count - markerBytes.Length);
+                        }
                     }
                     
                     currentByte = 0;
                     bitIndex = 0;
+                    
+                    int maximumByteCapacity = (image.Width * image.Height) / 8;
+                    if (bytes.Count > maximumByteCapacity) 
+                    {
+                        return "No hidden message found (reached end of image capacity).";
+                    }
                 }
             }
         }
         
         return "No message found or image is corrupted.";
     }
-    
+
     public static byte[] ClearMessage(string imagePath)
     {
          using var image = Image.Load<Rgba32>(imagePath);
-         
+         return PerformClear(image);
+    }
+
+    public static byte[] ClearMessageFromBytes(byte[] imageBytes)
+    {
+        using var image = Image.Load<Rgba32>(imageBytes);
+        return PerformClear(image);
+    }
+
+    private static byte[] PerformClear(Image<Rgba32> image)
+    {
          image.ProcessPixelRows(accessor =>
          {
              for (int y = 0; y < accessor.Height; y++)

@@ -37,7 +37,7 @@ public partial class MainWindow : Window
         {
             _baseVisiblePath = ofd.FileName;
             TxtBaseImagePath.Text = ofd.FileName;
-            ImgPreviewVisible.Source = new BitmapImage(new Uri(ofd.FileName));
+            ImgPreviewVisible.Source = LoadImageWithoutLocking(ofd.FileName);
         }
     }
 
@@ -49,6 +49,18 @@ public partial class MainWindow : Window
             _watermarkVisiblePath = ofd.FileName;
             TxtWatermarkPath.Text = ofd.FileName;
         }
+    }
+
+    // Helper method to load images into the UI without keeping the file locked,
+    // allowing the user to overwrite the original file if they want to.
+    private BitmapImage LoadImageWithoutLocking(string path)
+    {
+        var bitmap = new BitmapImage();
+        bitmap.BeginInit();
+        bitmap.CacheOption = BitmapCacheOption.OnLoad; // This is the magic line that releases the file lock
+        bitmap.UriSource = new Uri(path);
+        bitmap.EndInit();
+        return bitmap;
     }
 
     private void BtnApplyVisible_Click(object sender, RoutedEventArgs e)
@@ -91,6 +103,19 @@ public partial class MainWindow : Window
         }
     }
 
+    private void BtnClearVisible_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrEmpty(_baseVisiblePath))
+        {
+            MessageBox.Show("No image loaded to clear.");
+            return;
+        }
+
+        // Reset the preview to the original base image
+        _previewVisibleBytes = Array.Empty<byte>();
+        ImgPreviewVisible.Source = LoadImageWithoutLocking(_baseVisiblePath);
+    }
+
     private void BtnSaveVisible_Click(object sender, RoutedEventArgs e)
     {
         if (_previewVisibleBytes == null || _previewVisibleBytes.Length == 0)
@@ -99,11 +124,22 @@ public partial class MainWindow : Window
             return;
         }
 
-        var sfd = new SaveFileDialog { Filter = "PNG Image|*.png" };
+        var sfd = new SaveFileDialog { 
+            Filter = "PNG Image|*.png|JPEG Image|*.jpg|BMP Image|*.bmp",
+            DefaultExt = "png"
+        };
+        
         if (sfd.ShowDialog() == true)
         {
-            File.WriteAllBytes(sfd.FileName, _previewVisibleBytes);
-            MessageBox.Show("Image saved successfully!");
+            try 
+            {
+                File.WriteAllBytes(sfd.FileName, _previewVisibleBytes);
+                MessageBox.Show("Image saved successfully!");
+            }
+            catch (IOException ex)
+            {
+                MessageBox.Show($"File save error (is it open in another program?): {ex.Message}");
+            }
         }
     }
 
@@ -119,6 +155,26 @@ public partial class MainWindow : Window
         MessageBox.Show(metadata, "Image Metadata", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
+    private void BtnCompareMetaVisible_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrEmpty(_baseVisiblePath))
+        {
+            MessageBox.Show("Please load an image first.");
+            return;
+        }
+
+        if (_previewVisibleBytes == null || _previewVisibleBytes.Length == 0)
+        {
+            MessageBox.Show("Please apply a watermark first to generate the new metadata.");
+            return;
+        }
+
+        string diff = MetadataHelper.CompareMetadata(_baseVisiblePath, _previewVisibleBytes);
+        
+        // Show differences in a message box, or optionally a simple scrollable window
+        MessageBox.Show(diff, "Metadata Differences", MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
     // --- INVISIBLE TEXT STEGANOGRAPHY SECTION ---
 
     private string _stegaImagePath = string.Empty;
@@ -131,7 +187,7 @@ public partial class MainWindow : Window
         {
             _stegaImagePath = ofd.FileName;
             TxtStegaImagePath.Text = ofd.FileName;
-            ImgPreviewStega.Source = new BitmapImage(new Uri(ofd.FileName));
+            ImgPreviewStega.Source = LoadImageWithoutLocking(ofd.FileName);
             
             // Clear fields on new load
             TxtExtractedMessage.Text = string.Empty;
@@ -179,25 +235,48 @@ public partial class MainWindow : Window
         }
 
         // Steganography requires precise pixel data. PNG is lossless. JPG will destroy the data.
-        var sfd = new SaveFileDialog { Filter = "PNG Image (Required for Steganography)|*.png" };
+        var sfd = new SaveFileDialog { 
+            Filter = "PNG Image (Required for Steganography)|*.png",
+            DefaultExt = "png"
+        };
+        
         if (sfd.ShowDialog() == true)
         {
-            File.WriteAllBytes(sfd.FileName, _previewStegaBytes);
-            MessageBox.Show("Encoded image saved successfully!");
+            try
+            {
+                File.WriteAllBytes(sfd.FileName, _previewStegaBytes);
+                MessageBox.Show("Encoded image saved successfully!");
+            }
+            catch (IOException ex)
+            {
+                MessageBox.Show($"File save error (is it open in another program?): {ex.Message}");
+            }
         }
     }
 
     private void BtnExtractText_Click(object sender, RoutedEventArgs e)
     {
-        if (string.IsNullOrEmpty(_stegaImagePath))
+        if (string.IsNullOrEmpty(_stegaImagePath) && (_previewStegaBytes == null || _previewStegaBytes.Length == 0))
         {
-             MessageBox.Show("Please select an encoded image first.");
+             MessageBox.Show("Please select an image or encode a message first.");
              return;
         }
         
         try
         {
-            string decodedText = SteganographyHelper.DecodeText(_stegaImagePath);
+            string decodedText;
+            
+            // If the user just encoded something and it's sitting in memory, decode that.
+            // Otherwise, decode the image loaded from disk.
+            if (_previewStegaBytes != null && _previewStegaBytes.Length > 0) 
+            {
+                decodedText = SteganographyHelper.DecodeTextFromBytes(_previewStegaBytes);
+            }
+            else 
+            {
+                decodedText = SteganographyHelper.DecodeText(_stegaImagePath);
+            }
+            
             TxtExtractedMessage.Text = decodedText;
         }
         catch (Exception ex)
@@ -213,15 +292,32 @@ public partial class MainWindow : Window
             MessageBox.Show("Please select an image first.");
             return;
         }
-        
+
         try
         {
-            byte[] clearedBytes = SteganographyHelper.ClearMessage(_stegaImagePath);
-            
-            var sfd = new SaveFileDialog { Filter = "PNG Image|*.png" };
+            // If the user encoded something currently in memory, clear from that.
+            // Otherwise, clear the image they loaded from disk.
+            byte[] clearedBytes;
+            if (_previewStegaBytes != null && _previewStegaBytes.Length > 0)
+            {
+                clearedBytes = SteganographyHelper.ClearMessageFromBytes(_previewStegaBytes);
+            }
+            else
+            {
+                clearedBytes = SteganographyHelper.ClearMessage(_stegaImagePath);
+            }
+
+            var sfd = new SaveFileDialog { 
+                Filter = "PNG Image|*.png",
+                DefaultExt = "png"
+            };
             if (sfd.ShowDialog() == true)
             {
                 File.WriteAllBytes(sfd.FileName, clearedBytes);
+                
+                // Clear the preview memory since we wiped it
+                _previewStegaBytes = Array.Empty<byte>();
+                
                 MessageBox.Show("Cleared image saved successfully!");
             }
         }
@@ -241,5 +337,23 @@ public partial class MainWindow : Window
 
         string metadata = MetadataHelper.GetMetadata(_stegaImagePath);
         MessageBox.Show(metadata, "Image Metadata", MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
+    private void BtnCompareMetaStega_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrEmpty(_stegaImagePath))
+        {
+            MessageBox.Show("Please load an image first.");
+            return;
+        }
+
+        if (_previewStegaBytes == null || _previewStegaBytes.Length == 0)
+        {
+            MessageBox.Show("Please encode a message first to generate the new metadata.");
+            return;
+        }
+
+        string diff = MetadataHelper.CompareMetadata(_stegaImagePath, _previewStegaBytes);
+        MessageBox.Show(diff, "Metadata Differences", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 }

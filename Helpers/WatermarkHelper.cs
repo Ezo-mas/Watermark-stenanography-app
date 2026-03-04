@@ -13,6 +13,18 @@ public static class WatermarkHelper
         using var baseImage = Image.Load<Rgba32>(basePath);
         using var watermark = Image.Load<Rgba32>(watermarkPath);
 
+        // Auto-scale the watermark if it happens to be larger than the base image
+        if (watermark.Width > baseImage.Width || watermark.Height > baseImage.Height)
+        {
+            int newWidth = Math.Min(watermark.Width, baseImage.Width);
+            int newHeight = Math.Min(watermark.Height, baseImage.Height);
+            watermark.Mutate(x => x.Resize(new ResizeOptions
+            {
+                Size = new Size(newWidth, newHeight),
+                Mode = ResizeMode.Max
+            }));
+        }
+
         // Rotate the watermark based on user input
         if (angle != 0)
         {
