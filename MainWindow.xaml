@@ -5,7 +5,153 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WatermarkApp"
         mc:Ignorable="d"
-        Title="MainWindow" Height="650" Width="900">
+        Title="Watermarking &amp; Steganography App" Height="650" Width="900"
+        Background="#1E1E1E">
+    <Window.Resources>
+        <!-- Dark Theme Styles -->
+        <Style TargetType="Button">
+            <Setter Property="Background" Value="#333333"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="BorderBrush" Value="#555555"/>
+            <Setter Property="Padding" Value="5"/>
+            <Setter Property="Margin" Value="0,5"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Name="border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#4A4A4A"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#1E1E1E"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="#2D2D30"/>
+            <Setter Property="Foreground" Value="#D4D4D4"/>
+            <Setter Property="BorderBrush" Value="#3F3F46"/>
+            <Setter Property="CaretBrush" Value="#FFFFFF"/>
+            <Setter Property="Padding" Value="4"/>
+        </Style>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#D4D4D4"/>
+        </Style>
+        <Style TargetType="CheckBox">
+            <Setter Property="Foreground" Value="#D4D4D4"/>
+        </Style>
+        <Style TargetType="ComboBox">
+            <Setter Property="Background" Value="#2D2D30"/>
+            <Setter Property="Foreground" Value="#D4D4D4"/>
+            <Setter Property="BorderBrush" Value="#555555"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <ToggleButton Name="ToggleButton" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" 
+                                          Focusable="false" IsChecked="{Binding Path=IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" >
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border Name="Bg" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1">
+                                            <Grid>
+                                                <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" Margin="2"/>
+                                                <Path Name="Arrow" Fill="#D4D4D4" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" Data="M0,0 L4,4 L8,0 z"/>
+                                            </Grid>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Bg" Property="Background" Value="#4A4A4A"/>
+                                            </Trigger>
+                                            <Trigger Property="IsChecked" Value="True">
+                                                <Setter TargetName="Bg" Property="Background" Value="#1E1E1E"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+                            <ContentPresenter Name="ContentSite" IsHitTestVisible="False" Content="{TemplateBinding SelectionBoxItem}" 
+                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" 
+                                              ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}" 
+                                              Margin="10,3,30,3" VerticalAlignment="Center" HorizontalAlignment="Left" />
+                            <TextBox x:Name="PART_EditableTextBox" Visibility="Hidden"/>
+                            <Popup Name="Popup" Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}" AllowsTransparency="True" Focusable="False">
+                                <Border Name="DropDownBorder" Background="#2D2D30" BorderThickness="1" BorderBrush="#555555" MinWidth="{TemplateBinding ActualWidth}" MaxHeight="200">
+                                    <ScrollViewer SnapsToDevicePixels="True">
+                                        <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained" />
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="ItemContainerStyle">
+                <Setter.Value>
+                    <Style TargetType="ComboBoxItem">
+                        <Setter Property="Background" Value="#2D2D30"/>
+                        <Setter Property="Foreground" Value="#D4D4D4"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="ComboBoxItem">
+                                    <Border Name="Border" Padding="5" Background="{TemplateBinding Background}">
+                                        <ContentPresenter />
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Border" Property="Background" Value="#4A4A4A"/>
+                                            <Setter Property="Foreground" Value="#FFFFFF"/>
+                                        </Trigger>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter TargetName="Border" Property="Background" Value="#1E1E1E"/>
+                                            <Setter Property="Foreground" Value="#FFFFFF"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="TabControl">
+            <Setter Property="Background" Value="#1E1E1E"/>
+            <Setter Property="BorderBrush" Value="#3F3F46"/>
+            <Setter Property="BorderThickness" Value="0,1,0,0"/>
+        </Style>
+        <Style TargetType="TabItem">
+            <Setter Property="Background" Value="#2D2D30"/>
+            <Setter Property="Foreground" Value="#D4D4D4"/>
+            <Setter Property="BorderBrush" Value="#3F3F46"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border Name="Border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1,1,1,0" Margin="2,0">
+                            <ContentPresenter x:Name="ContentSite" VerticalAlignment="Center" HorizontalAlignment="Center" ContentSource="Header" Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="#1E1E1E"/>
+                                <Setter Property="Foreground" Value="#FFFFFF"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="False">
+                                <Setter TargetName="Border" Property="Background" Value="#2D2D30"/>
+                                <Setter Property="Foreground" Value="#AAAAAA"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+    
     <Grid>
         <TabControl>
             <!-- Visible Image Watermarking Tab -->
@@ -17,10 +163,10 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0" Margin="0,0,10,0">
-                        <Button Name="BtnSelectImage" Content="1. Select Base Image" Margin="0,5" Click="BtnSelectImage_Click"/>
+                        <Button Name="BtnSelectImage" Content="Select Base Image" Margin="0,5" Click="BtnSelectImage_Click"/>
                         <TextBlock Name="TxtBaseImagePath" Text="No image selected" TextWrapping="Wrap" FontSize="10" Margin="0,0,0,10"/>
 
-                        <Button Name="BtnSelectWatermark" Content="2. Select Watermark Image" Margin="0,5" Click="BtnSelectWatermark_Click"/>
+                        <Button Name="BtnSelectWatermark" Content="Select Watermark Image" Margin="0,5" Click="BtnSelectWatermark_Click"/>
                         <TextBlock Name="TxtWatermarkPath" Text="No watermark selected" TextWrapping="Wrap" FontSize="10" Margin="0,0,0,10"/>
 
                         <TextBlock Text="Position:" Margin="0,5,0,0"/>
@@ -39,9 +185,9 @@
 
                         <CheckBox Name="ChkRepeat" Content="Tile / Repeat Watermark" Margin="0,5,0,10"/>
 
-                        <Button Name="BtnApplyVisible" Content="3. Apply Watermark" Margin="0,15,0,5" Click="BtnApplyVisible_Click"/>
+                        <Button Name="BtnApplyVisible" Content="Apply Watermark" Margin="0,15,0,5" Click="BtnApplyVisible_Click"/>
                         <Button Name="BtnClearVisible" Content="Undo / Remove Watermark" Margin="0,5,0,5" Click="BtnClearVisible_Click"/>
-                        <Button Name="BtnSaveVisible" Content="4. Save Image" Margin="0,15,0,5" Click="BtnSaveVisible_Click"/>
+                        <Button Name="BtnSaveVisible" Content="Save Image" Margin="0,15,0,5" Click="BtnSaveVisible_Click"/>
                         
                         <Button Name="BtnViewMetaVisible" Content="View Original Image Metadata" Margin="0,15,0,5" Click="BtnViewMetaVisible_Click"/>
                         <Button Name="BtnCompareMetaVisible" Content="Compare Metadata (After Watermark)" Margin="0,5,0,5" Click="BtnCompareMetaVisible_Click"/>
@@ -62,14 +208,14 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0" Margin="0,0,10,0">
-                        <Button Name="BtnSelectImageStega" Content="1. Select Base Image" Margin="0,5" Click="BtnSelectImageStega_Click"/>
+                        <Button Name="BtnSelectImageStega" Content="Select Base Image" Margin="0,5" Click="BtnSelectImageStega_Click"/>
                         <TextBlock Name="TxtStegaImagePath" Text="No image selected" TextWrapping="Wrap" FontSize="10" Margin="0,0,0,10"/>
 
                         <TextBlock Text="Secret Message to Hide:" Margin="0,5,0,0"/>
                         <TextBox Name="TxtSecretMessage" Height="60" TextWrapping="Wrap" AcceptsReturn="True" Margin="0,0,0,10"/>
                         
-                        <Button Name="BtnHideText" Content="2. Hide Text (Encode)" Margin="0,5" Click="BtnHideText_Click"/>
-                        <Button Name="BtnSaveStega" Content="3. Save Encoded Image" Margin="0,5,0,15" Click="BtnSaveStega_Click"/>
+                        <Button Name="BtnHideText" Content="Hide Text (Encode)" Margin="0,5" Click="BtnHideText_Click"/>
+                        <Button Name="BtnSaveStega" Content="Save Encoded Image" Margin="0,5,0,15" Click="BtnSaveStega_Click"/>
                         
                         <Separator Margin="0,10"/>
 
