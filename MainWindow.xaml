@@ -1,0 +1,90 @@
+﻿<Window x:Class="WatermarkApp.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:WatermarkApp"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800">
+    <Grid>
+        <TabControl>
+            <!-- Visible Image Watermarking Tab -->
+            <TabItem Header="Visible Image Watermark">
+                <Grid Margin="10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="250"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                        <Button Name="BtnSelectImage" Content="1. Select Base Image" Margin="0,5" Click="BtnSelectImage_Click"/>
+                        <TextBlock Name="TxtBaseImagePath" Text="No image selected" TextWrapping="Wrap" FontSize="10" Margin="0,0,0,10"/>
+
+                        <Button Name="BtnSelectWatermark" Content="2. Select Watermark Image" Margin="0,5" Click="BtnSelectWatermark_Click"/>
+                        <TextBlock Name="TxtWatermarkPath" Text="No watermark selected" TextWrapping="Wrap" FontSize="10" Margin="0,0,0,10"/>
+
+                        <TextBlock Text="Position:" Margin="0,5,0,0"/>
+                        <ComboBox Name="CmbPosition" SelectedIndex="0" Margin="0,0,0,10">
+                            <ComboBoxItem Content="Center"/>
+                            <ComboBoxItem Content="Top Right"/>
+                            <ComboBoxItem Content="Top Left"/>
+                            <ComboBoxItem Content="Bottom Right"/>
+                            <ComboBoxItem Content="Bottom Left"/>
+                            <ComboBoxItem Content="Top Center"/>
+                            <ComboBoxItem Content="Bottom Center"/>
+                        </ComboBox>
+
+                        <TextBlock Text="Rotation Angle:" Margin="0,5,0,0"/>
+                        <TextBox Name="TxtAngle" Text="0" Margin="0,0,0,10"/>
+
+                        <CheckBox Name="ChkRepeat" Content="Tile / Repeat Watermark" Margin="0,5,0,10"/>
+
+                        <Button Name="BtnApplyVisible" Content="3. Apply Watermark" Margin="0,15,0,5" Click="BtnApplyVisible_Click"/>
+                        <Button Name="BtnSaveVisible" Content="4. Save Image" Margin="0,5,0,5" Click="BtnSaveVisible_Click"/>
+                        
+                        <Button Name="BtnViewMetaVisible" Content="View Image Metadata" Margin="0,15,0,5" Click="BtnViewMetaVisible_Click"/>
+                    </StackPanel>
+
+                    <Border Grid.Column="1" BorderBrush="Gray" BorderThickness="1">
+                        <Image Name="ImgPreviewVisible" Stretch="Uniform"/>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <!-- Invisible Text Steganography Tab -->
+            <TabItem Header="Invisible Text Steganography">
+                <Grid Margin="10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="250"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                        <Button Name="BtnSelectImageStega" Content="1. Select Base Image" Margin="0,5" Click="BtnSelectImageStega_Click"/>
+                        <TextBlock Name="TxtStegaImagePath" Text="No image selected" TextWrapping="Wrap" FontSize="10" Margin="0,0,0,10"/>
+
+                        <TextBlock Text="Secret Message to Hide:" Margin="0,5,0,0"/>
+                        <TextBox Name="TxtSecretMessage" Height="60" TextWrapping="Wrap" AcceptsReturn="True" Margin="0,0,0,10"/>
+                        
+                        <Button Name="BtnHideText" Content="2. Hide Text (Encode)" Margin="0,5" Click="BtnHideText_Click"/>
+                        <Button Name="BtnSaveStega" Content="3. Save Encoded Image" Margin="0,5,0,15" Click="BtnSaveStega_Click"/>
+                        
+                        <Separator Margin="0,10"/>
+
+                        <Button Name="BtnExtractText" Content="Extract Message (Decode)" Margin="0,5" Click="BtnExtractText_Click"/>
+                        <TextBlock Text="Extracted Message:" Margin="0,5,0,0"/>
+                        <TextBox Name="TxtExtractedMessage" Height="60" TextWrapping="Wrap" AcceptsReturn="True" IsReadOnly="True" Margin="0,0,0,10"/>
+                        
+                        <Button Name="BtnClearMessage" Content="Clear Hidden Message &amp; Save" Margin="0,5" Click="BtnClearMessage_Click"/>
+
+                        <Button Name="BtnViewMetaStega" Content="View Image Metadata" Margin="0,15,0,5" Click="BtnViewMetaStega_Click"/>
+                    </StackPanel>
+
+                    <Border Grid.Column="1" BorderBrush="Gray" BorderThickness="1">
+                        <Image Name="ImgPreviewStega" Stretch="Uniform"/>
+                    </Border>
+                </Grid>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</Window>
