@@ -8,6 +8,9 @@ namespace WatermarkApp.Helpers;
 
 public static class WatermarkHelper
 {
+    /// <summary>
+    /// Applies a visible image watermark to a base image, handling auto-scaling, rotation, and positioning or tiling.
+    /// </summary>
     public static byte[] ApplyVisibleWatermark(string basePath, string watermarkPath, string position, float angle, bool isTiled)
     {
         using var baseImage = Image.Load<Rgba32>(basePath);

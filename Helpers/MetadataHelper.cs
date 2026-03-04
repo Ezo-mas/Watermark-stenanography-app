@@ -8,6 +8,9 @@ namespace WatermarkApp.Helpers;
 
 public static class MetadataHelper
 {
+    /// <summary>
+    /// Reads and formats all EXIF and metadata directories/tags from an image file.
+    /// </summary>
     public static string GetMetadata(string imagePath)
     {
         try
@@ -47,7 +50,9 @@ public static class MetadataHelper
         }
         return sb.ToString();
     }
-
+    /// <summary>
+    /// Compares the metadata of two images, identifying added, removed, and modified tags.
+    /// </summary>
     public static string CompareMetadata(string originalImagePath, byte[] newImageBytes)
     {
         try

@@ -4,7 +4,6 @@
              xmlns:local="clr-namespace:WatermarkApp"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-        <!-- Modern Dark Mode ScrollBar Style (Global) -->
         <Style TargetType="{x:Type ScrollBar}">
             <Setter Property="Stylus.IsFlicksEnabled" Value="false"/>
             <Setter Property="Foreground" Value="#555555"/>
@@ -14,7 +13,6 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type ScrollBar}">
                         <Grid x:Name="GridRoot" Background="{TemplateBinding Background}">
-                            <!-- Hide default arrows for a modern scrollbar look -->
                             <Track x:Name="PART_Track" IsDirectionReversed="true" Focusable="false">
                                 <Track.Thumb>
                                     <Thumb>

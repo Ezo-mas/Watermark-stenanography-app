@@ -11,6 +11,9 @@ public static class SteganographyHelper
     // A simple EOF marker to signify where the text stops
     private const string EndOfMessageMarker = "@@END@@";
 
+    /// <summary>
+    /// Hides a text message within an image by modifying the Least Significant Bit (LSB) of the blue color channel.
+    /// </summary>
     public static byte[] EncodeText(string imagePath, string textToHide)
     {
         using var image = Image.Load<Rgba32>(imagePath);
@@ -77,6 +80,9 @@ public static class SteganographyHelper
         return DecodeImage(image);
     }
 
+    /// <summary>
+    /// Decodes a text message from a loaded image by reading the LSBs until the end-of-message marker is found.
+    /// </summary>
     private static string DecodeImage(Image<Rgba32> image)
     {
         var bytes = new System.Collections.Generic.List<byte>();
@@ -144,6 +150,9 @@ public static class SteganographyHelper
         return PerformClear(image);
     }
 
+    /// <summary>
+    /// Overwrites the LSB of the blue channel for all pixels across the image, zeroing out any hidden messages.
+    /// </summary>
     private static byte[] PerformClear(Image<Rgba32> image)
     {
          image.ProcessPixelRows(accessor =>
