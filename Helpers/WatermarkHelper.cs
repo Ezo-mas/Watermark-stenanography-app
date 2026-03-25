@@ -1,4 +1,3 @@
-using System;
 using System.IO;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
@@ -13,6 +12,26 @@ public static class WatermarkHelper
     /// </summary>
     public static byte[] ApplyVisibleWatermark(string basePath, string watermarkPath, string position, float angle, bool isTiled)
     {
+        if (string.IsNullOrWhiteSpace(basePath))
+        {
+            throw new ArgumentException("Base image path must not be empty.", nameof(basePath));
+        }
+
+        if (string.IsNullOrWhiteSpace(watermarkPath))
+        {
+            throw new ArgumentException("Watermark image path must not be empty.", nameof(watermarkPath));
+        }
+
+        if (!File.Exists(basePath))
+        {
+            throw new FileNotFoundException("Base image file not found.", basePath);
+        }
+
+        if (!File.Exists(watermarkPath))
+        {
+            throw new FileNotFoundException("Watermark image file not found.", watermarkPath);
+        }
+
         using var baseImage = Image.Load<Rgba32>(basePath);
         using var watermark = Image.Load<Rgba32>(watermarkPath);
 

@@ -1,15 +1,10 @@
 using System.IO;
-using System.Text;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using Microsoft.Win32;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 using WatermarkApp.Helpers;
 using System.Runtime.InteropServices;
 using System.Windows.Interop;
@@ -54,9 +49,20 @@ public partial class MainWindow : Window
         var ofd = new OpenFileDialog { Filter = "Image Files|*.jpg;*.jpeg;*.png;*.bmp" };
         if (ofd.ShowDialog() == true)
         {
+            BitmapImage? loadedImage = LoadImageWithoutLocking(ofd.FileName);
+            if (loadedImage is null)
+            {
+                _baseVisiblePath = string.Empty;
+                TxtBaseImagePath.Text = "No image selected";
+                _previewVisibleBytes = Array.Empty<byte>();
+                ImgPreviewVisible.Source = null;
+                return;
+            }
+
             _baseVisiblePath = ofd.FileName;
             TxtBaseImagePath.Text = ofd.FileName;
-            ImgPreviewVisible.Source = LoadImageWithoutLocking(ofd.FileName);
+            _previewVisibleBytes = Array.Empty<byte>();
+            ImgPreviewVisible.Source = loadedImage;
         }
     }
 
@@ -67,19 +73,81 @@ public partial class MainWindow : Window
         {
             _watermarkVisiblePath = ofd.FileName;
             TxtWatermarkPath.Text = ofd.FileName;
+            _previewVisibleBytes = Array.Empty<byte>();
         }
     }
 
     // Helper method to load images into the UI without keeping the file locked,
     // allowing the user to overwrite the original file if they want to.
-    private BitmapImage LoadImageWithoutLocking(string path)
+    private BitmapImage? LoadImageWithoutLocking(string path)
     {
-        var bitmap = new BitmapImage();
-        bitmap.BeginInit();
-        bitmap.CacheOption = BitmapCacheOption.OnLoad;
-        bitmap.UriSource = new Uri(path);
-        bitmap.EndInit();
-        return bitmap;
+        try
+        {
+            if (!File.Exists(path))
+            {
+                AppMessageBox.Show("The selected image no longer exists.");
+                return null;
+            }
+
+            byte[] imageBytes = File.ReadAllBytes(path);
+            using var stream = new MemoryStream(imageBytes);
+            var bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.StreamSource = stream;
+            bitmap.EndInit();
+            bitmap.Freeze();
+            return bitmap;
+        }
+        catch (Exception ex)
+        {
+            AppMessageBox.Show($"Could not load image preview: {ex.Message}");
+            return null;
+        }
+    }
+
+    private BitmapImage? LoadImageFromBytes(byte[] imageBytes)
+    {
+        try
+        {
+            using var stream = new MemoryStream(imageBytes);
+            var bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.StreamSource = stream;
+            bitmap.EndInit();
+            bitmap.Freeze();
+            return bitmap;
+        }
+        catch (Exception ex)
+        {
+            AppMessageBox.Show($"Could not render image preview: {ex.Message}");
+            return null;
+        }
+    }
+
+    private static void SaveBytesInSelectedFormat(byte[] sourceImageBytes, string outputPath)
+    {
+        string extension = Path.GetExtension(outputPath).ToLowerInvariant();
+        if (extension == ".png")
+        {
+            File.WriteAllBytes(outputPath, sourceImageBytes);
+            return;
+        }
+
+        using var image = SixLabors.ImageSharp.Image.Load<Rgba32>(sourceImageBytes);
+        switch (extension)
+        {
+            case ".jpg":
+            case ".jpeg":
+                image.SaveAsJpeg(outputPath);
+                break;
+            case ".bmp":
+                image.SaveAsBmp(outputPath);
+                break;
+            default:
+                throw new InvalidOperationException("Unsupported file extension. Please use .png, .jpg, or .bmp.");
+        }
     }
 
     /// <summary>
@@ -100,7 +168,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        string position = ((ComboBoxItem)CmbPosition.SelectedItem).Content.ToString() ?? "Center";
+        string position = (CmbPosition.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Center";
         bool isTiled = ChkRepeat.IsChecked == true;
 
         try
@@ -112,12 +180,7 @@ public partial class MainWindow : Window
                 angle, 
                 isTiled);
 
-            // Update UI with preview
-            var bitmap = new BitmapImage();
-            bitmap.BeginInit();
-            bitmap.StreamSource = new MemoryStream(_previewVisibleBytes);
-            bitmap.EndInit();
-            ImgPreviewVisible.Source = bitmap;
+            ImgPreviewVisible.Source = LoadImageFromBytes(_previewVisibleBytes);
         }
         catch (Exception ex)
         {
@@ -155,12 +218,12 @@ public partial class MainWindow : Window
         {
             try 
             {
-                File.WriteAllBytes(sfd.FileName, _previewVisibleBytes);
+                SaveBytesInSelectedFormat(_previewVisibleBytes, sfd.FileName);
                 AppMessageBox.Show("Image saved successfully!");
             }
-            catch (IOException ex)
+            catch (Exception ex)
             {
-                AppMessageBox.Show($"File save error (is it open in another program?): {ex.Message}");
+                AppMessageBox.Show($"Failed to save image: {ex.Message}");
             }
         }
     }
@@ -207,9 +270,21 @@ public partial class MainWindow : Window
         var ofd = new OpenFileDialog { Filter = "Image Files (PNG recommended)|*.png;*.jpg;*.jpeg;*.bmp" };
         if (ofd.ShowDialog() == true)
         {
+            BitmapImage? loadedImage = LoadImageWithoutLocking(ofd.FileName);
+            if (loadedImage is null)
+            {
+                _stegaImagePath = string.Empty;
+                TxtStegaImagePath.Text = "No image selected";
+                _previewStegaBytes = Array.Empty<byte>();
+                ImgPreviewStega.Source = null;
+                TxtExtractedMessage.Text = string.Empty;
+                return;
+            }
+
             _stegaImagePath = ofd.FileName;
             TxtStegaImagePath.Text = ofd.FileName;
-            ImgPreviewStega.Source = LoadImageWithoutLocking(ofd.FileName);
+            ImgPreviewStega.Source = loadedImage;
+            _previewStegaBytes = Array.Empty<byte>();
             
             // Clear fields on new load
             TxtExtractedMessage.Text = string.Empty;
@@ -236,12 +311,7 @@ public partial class MainWindow : Window
         try
         {
             _previewStegaBytes = SteganographyHelper.EncodeText(_stegaImagePath, TxtSecretMessage.Text);
-            
-            var bitmap = new BitmapImage();
-            bitmap.BeginInit();
-            bitmap.StreamSource = new MemoryStream(_previewStegaBytes);
-            bitmap.EndInit();
-            ImgPreviewStega.Source = bitmap;
+            ImgPreviewStega.Source = LoadImageFromBytes(_previewStegaBytes);
             
             AppMessageBox.Show("Message hidden successfully. Please save the image as PNG!");
         }
@@ -273,9 +343,9 @@ public partial class MainWindow : Window
                 File.WriteAllBytes(sfd.FileName, _previewStegaBytes);
                 AppMessageBox.Show("Encoded image saved successfully!");
             }
-            catch (IOException ex)
+            catch (Exception ex)
             {
-                AppMessageBox.Show($"File save error (is it open in another program?): {ex.Message}");
+                AppMessageBox.Show($"Failed to save image: {ex.Message}");
             }
         }
     }
@@ -346,6 +416,7 @@ public partial class MainWindow : Window
                 
                 // Clear the preview memory since we wiped it
                 _previewStegaBytes = Array.Empty<byte>();
+                ImgPreviewStega.Source = LoadImageWithoutLocking(sfd.FileName);
                 
                 AppMessageBox.Show("Cleared image saved successfully!");
             }

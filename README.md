@@ -5,7 +5,7 @@ A Windows desktop application built with C# and WPF for applying visible digital
 ## Features
 
 - **Visible Watermarking:** Apply visible image watermarks. Auto-scales based on the source image size.
-- **Invisible Text Steganography:** Hide secret text inside images. Uses the Least Significant Bit (LSB) of the blue channel to imperceptibly encode characters.
+- **Invisible Text Steganography:** Hide secret text inside images. Uses the Least Significant Bit (LSB) of the blue channel and stores a framed payload (`magic + length + checksum`) for safer decode validation.
 - **Steganography Decoding & Clearing:** Extract hidden text from an image, and optionally destroy the hidden message, clearing it from the image.
 - **Metadata Comparison:** View and compare hidden EXIF data and other metadata tags to see exactly what changes between the original and modified image.
 - **Lossless Handling:** Enforces `.png` exporting for steganography to prevent data loss via compression (which occurs with JPEGs).
@@ -46,14 +46,24 @@ You do not need to install the application through a traditional installer. You 
 ### Secret Messages (Steganography)
 1. Switch to the **Steganography** tab.
 2. Load your original image.
-3. Type your secret message into the text box. The app will notify you if your message approaches the maximum byte capacity of the image.
+3. Type your secret message into the text box.
 4. Click **Hide Text (Encode)**.
 5. Save the image (it must be saved as a `.png` to preserve the precise pixel data; the app automatically handles this).
 6. To **Decode**, load a previously encoded image and click **Extract Text (Decode)**. The secret text will appear on the screen.
+
+#### Capacity Math
+- The app writes 1 bit per pixel (blue-channel LSB), so total storable bytes are `floor(width * height / 8)`.
+- Steganography metadata header is 12 bytes (`magic + length + checksum`), so max payload bytes are:
+  `floor(width * height / 8) - 12`.
+- UTF-8 is used for text; some characters use multiple bytes.
+
+#### PNG vs JPEG
+- Use `.png` for steganography output.
+- Saving to `.jpg` can sometimes appear to work for very short text, but JPEG is lossy and not reliable for LSB-based hidden data.
 
 ## Project Structure
 
 - `MainWindow.xaml` / `MainWindow.xaml.cs`: Holds the UI layout and state logic.
 - `Helpers/WatermarkHelper.cs`: Logic for rendering an image watermark directly onto the base image.
-- `Helpers/SteganographyHelper.cs`: Binary processing file, handles converting string characters to bits and shuffling them into the image pixel array.
+- `Helpers/SteganographyHelper.cs`: Encodes/decodes LSB payloads with framed header validation and message clearing logic.
 - `Helpers/MetadataHelper.cs`: Reads and compares EXIF tags to show data modifications.
