@@ -1,6 +1,4 @@
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
 using MetadataExtractor;
 
@@ -13,12 +11,22 @@ public static class MetadataHelper
     /// </summary>
     public static string GetMetadata(string imagePath)
     {
+        if (string.IsNullOrWhiteSpace(imagePath))
+        {
+            return "Error reading metadata: Image path is empty.";
+        }
+
+        if (!File.Exists(imagePath))
+        {
+            return "Error reading metadata: Image file not found.";
+        }
+
         try
         {
             var directories = ImageMetadataReader.ReadMetadata(imagePath);
             return FormatMetadata(directories);
         }
-        catch (System.Exception ex)
+        catch (Exception ex)
         {
             return $"Error reading metadata: {ex.Message}";
         }
@@ -26,13 +34,18 @@ public static class MetadataHelper
 
     public static string GetMetadata(byte[] imageBytes)
     {
+        if (imageBytes is null || imageBytes.Length == 0)
+        {
+            return "Error reading metadata: Image bytes are empty.";
+        }
+
         try
         {
             using var stream = new MemoryStream(imageBytes);
             var directories = ImageMetadataReader.ReadMetadata(stream);
             return FormatMetadata(directories);
         }
-        catch (System.Exception ex)
+        catch (Exception ex)
         {
             return $"Error reading metadata: {ex.Message}";
         }
@@ -41,14 +54,17 @@ public static class MetadataHelper
     private static string FormatMetadata(IEnumerable<MetadataExtractor.Directory> directories)
     {
         var sb = new StringBuilder();
+        int tagCount = 0;
         foreach (var directory in directories)
         {
             foreach (var tag in directory.Tags)
             {
                 sb.AppendLine($"{directory.Name} - {tag.Name} = {tag.Description}");
+                tagCount++;
             }
         }
-        return sb.ToString();
+
+        return tagCount == 0 ? "No metadata found." : sb.ToString();
     }
 
 
@@ -57,10 +73,26 @@ public static class MetadataHelper
     /// </summary>
     public static string CompareMetadata(string originalImagePath, byte[] newImageBytes)
     {
+        if (string.IsNullOrWhiteSpace(originalImagePath))
+        {
+            return "Error comparing metadata: Original image path is empty.";
+        }
+
+        if (!File.Exists(originalImagePath))
+        {
+            return "Error comparing metadata: Original image file not found.";
+        }
+
+        if (newImageBytes is null || newImageBytes.Length == 0)
+        {
+            return "Error comparing metadata: New image bytes are empty.";
+        }
+
         try
         {
             var origDirectories = ImageMetadataReader.ReadMetadata(originalImagePath);
-            var newDirectories = ImageMetadataReader.ReadMetadata(new MemoryStream(newImageBytes));
+            using var newImageStream = new MemoryStream(newImageBytes);
+            var newDirectories = ImageMetadataReader.ReadMetadata(newImageStream);
 
             var origTags = ExtractTags(origDirectories);
             var newTags = ExtractTags(newDirectories);
@@ -112,7 +144,7 @@ public static class MetadataHelper
 
             return sb.ToString();
         }
-        catch (System.Exception ex)
+        catch (Exception ex)
         {
             return $"Error comparing metadata: {ex.Message}";
         }
