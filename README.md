@@ -57,10 +57,6 @@ You do not need to install the application through a traditional installer. You 
   `floor(width * height / 8) - 12`.
 - UTF-8 is used for text; some characters use multiple bytes.
 
-#### PNG vs JPEG
-- Use `.png` for steganography output.
-- Saving to `.jpg` can sometimes appear to work for very short text, but JPEG is lossy and not reliable for LSB-based hidden data.
-
 ## Project Structure
 
 - `MainWindow.xaml` / `MainWindow.xaml.cs`: Holds the UI layout and state logic.
